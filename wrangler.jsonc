@@ -15,6 +15,9 @@
 	//     "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 	//   }
 	// ],
+	"routes": [
+		{ "pattern": "cdn.imgipsum.com", "custom_domain": true },
+	],
 	"r2_buckets": [
 		{
 			"binding": "CF_BUCKET",
