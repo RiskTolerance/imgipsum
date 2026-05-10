@@ -13,6 +13,9 @@ const COUNTS: Record<string, number> = {
   food: 20,
   landscapes: 20,
   architecture: 20,
+  'pets/dogs': 20,
+  'pets/cats': 20,
+  'pets/other': 5,
   // interiors: 20,
   // abstract: 20,
   // travel: 20,
@@ -20,9 +23,19 @@ const COUNTS: Record<string, number> = {
 
 const Request = z.object({
   format: z.enum(['webp', 'avif', 'jpeg', 'png']),
-  w: z.string().regex(/^\d+$/).refine(s => SIZES.has(+s), { error: 'invalid size' }),
-  h: z.string().regex(/^\d+$/).refine(s => SIZES.has(+s), { error: 'invalid size' }),
-  rest: z.string().min(1).refine(s => !s.includes('..'), { error: 'no traversal' }).refine(s => !s.startsWith('/'), { error: 'no absolute' }),
+  w: z
+    .string()
+    .regex(/^\d+$/)
+    .refine((s) => SIZES.has(+s), { error: 'invalid size' }),
+  h: z
+    .string()
+    .regex(/^\d+$/)
+    .refine((s) => SIZES.has(+s), { error: 'invalid size' }),
+  rest: z
+    .string()
+    .min(1)
+    .refine((s) => !s.includes('..'), { error: 'no traversal' })
+    .refine((s) => !s.startsWith('/'), { error: 'no absolute' }),
 })
 
 type RequestParams = z.infer<typeof Request>
@@ -47,26 +60,31 @@ app.get('/one/:w/:h/:format/:rest{.+}', async (c) => {
   const parse = Request.safeParse(params)
   if (!parse.success) {
     throw new HTTPException(400, {
-      message: 'Input params do not match expected shape! See docs at https://www.docs.com'
+      message:
+        'Input params do not match expected shape! See docs at https://www.docs.com',
     })
   }
   const { rest, format, w, h } = params
 
-  const obj = await env.CF_BUCKET.get(`${rest}.jpg`).then(r => {
+  const obj = await env.CF_BUCKET.get(`${rest}.jpg`).then((r) => {
     if (r === null || r === undefined) {
       throw new HTTPException(400, {
-        message: 'Image does not exist!'
+        message: 'Image does not exist!',
       })
     }
     return r
   })
   const formatString = `image/${format}` as FormatString
-  const transform = (await env.CF_IMAGES.input(obj.body).transform({ width: +w, height: +h }).output({ format: formatString })).response()
+  const transform = (
+    await env.CF_IMAGES.input(obj.body)
+      .transform({ width: +w, height: +h })
+      .output({ format: formatString })
+  ).response()
   const res = new Response(transform.body, {
     headers: {
       'Content-Type': transform.headers.get('Content-Type') ?? formatString,
-      'Cache-Control': 'public, max-age=31536000, immutable'
-    }
+      'Cache-Control': 'public, max-age=31536000, immutable',
+    },
   })
   c.executionCtx.waitUntil(cache.put(c.req.raw, res.clone()))
   return res
@@ -77,7 +95,8 @@ app.get('/random/:w/:h/:format/:rest{.+}', (c) => {
   const parse = Request.safeParse(params)
   if (!parse.success) {
     throw new HTTPException(400, {
-      message: 'Input params do not match expected shape! See docs at https://www.docs.com'
+      message:
+        'Input params do not match expected shape! See docs at https://www.docs.com',
     })
   }
   const { rest, format, w, h } = params
