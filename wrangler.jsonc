@@ -1,6 +1,6 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "placeholding",
+	"name": "imgipsum",
 	"main": "src/index.ts",
 	"compatibility_date": "2026-05-06",
 	// "compatibility_flags": [
